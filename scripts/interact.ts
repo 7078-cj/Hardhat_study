@@ -4,20 +4,38 @@ import { network } from "hardhat";
 const { ethers } = await network.connect();
 
 async function main() {
-  // 1. Deploy contract
-  const Contract = await ethers.getContractFactory("MyContract");
-  const contract = await Contract.deploy();
-  await contract.waitForDeployment();
+  // 1. Get deployer (first Hardhat account)
+  const [deployer] = await ethers.getSigners();
+  console.log("Using account:", deployer.address);
 
-  console.log("Contract deployed to:", await contract.getAddress());
+  // 2. Deploy Twitter contract
+  const Twitter = await ethers.getContractFactory("Twitter");
+  const twitter = await Twitter.deploy();
+  await twitter.waitForDeployment();
+  console.log("Twitter deployed to:", await twitter.getAddress());
 
-  // 2. Call public variable
-  await contract.set("hello world");
-  let message = await contract.get();
-  console.log("Message:", message);
+  // 3. Create tweets
+  let tx = await twitter.createTweet("Hello blockchain world!");
+  await tx.wait();
+
+  tx = await twitter.createTweet("Second tweet, GM!");
+  await tx.wait();
+
+  console.log("Tweets created ✅");
+
+  // 4. Get single tweet
+  const firstTweet = await twitter.getTweet(deployer.address, 0);
+  console.log("First tweet:", firstTweet);
+
+  // 5. Get all tweets
+  const allTweets = await twitter.getAllTweets(deployer.address);
+  console.log("All tweets:", allTweets);
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+// Run script
+main()
+  .then(() => process.exit(0))
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
