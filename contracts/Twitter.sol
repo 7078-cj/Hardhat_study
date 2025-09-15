@@ -14,6 +14,9 @@ contract Twitter{
         uint256 likes;
     }
 
+    event TweetCreated(Tweet);
+    event TweetLiked(Tweet, uint256 tweetId, uint256 newLikeCount);
+
     address public owner;
 
     constructor(){
@@ -46,6 +49,8 @@ contract Twitter{
 
 
        tweets[msg.sender].push(newTweet);
+
+       emit TweetCreated(newTweet);
     }
 
     // memory = temporary storage
@@ -63,6 +68,8 @@ contract Twitter{
         require(tweets[author][id].id == id , "tweet does not exist");
 
         tweets[author][id].likes++;
+
+        emit TweetLiked(tweets[author][id], id, tweets[author][id].likes);
     }
 
     function unlikeTweet(address author, uint256 id) external{
