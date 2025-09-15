@@ -16,7 +16,7 @@ async function main() {
   console.log("Twitter deployed to:", contractAddress);
 
   // Listen for events
-  twitter.on("TweetCreated", (tweet) => {
+  (twitter as any).on("TweetCreated", (tweet: any) => {
     console.log("\n📢 Event: TweetCreated");
     console.log("Tweet ID:", tweet.id.toString());
     console.log("Author:", tweet.author);
@@ -25,7 +25,7 @@ async function main() {
     console.log("Likes:", tweet.likes.toString());
   });
 
-  twitter.on("TweetLiked", (tweet, tweetId, newLikeCount) => {
+  (twitter as any).on("TweetLiked", ({tweet, tweetId, newLikeCount}:any) => {
     console.log("\n❤️ Event: TweetLiked");
     console.log("Tweet ID:", tweet.id.toString());
     console.log("Author:", tweet.author);
