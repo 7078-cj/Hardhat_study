@@ -1,9 +1,22 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
+
+interface IProfile{
+    struct UserProfile{
+        string displayName;
+        string bio;
+    }
+
+    function getProfile(address _user) external view returns(UserProfile memory);
+
+}
+    
+
 contract Twitter{
-    
-    
+
+    IProfile profileContract;
+
     uint16 public MAX_TWEET_LENGTH = 280;
 
     struct Tweet {
@@ -19,12 +32,19 @@ contract Twitter{
 
     address public owner;
 
-    constructor(){
+    constructor(address _profileContract) {
         owner = msg.sender;
-    }// this contructs the owner as the one who deployed the contract
+        profileContract = IProfile(_profileContract);
+    }
 
     modifier onlyOwner(){
         require(msg.sender == owner, "You Are Not the Owner");
+        _;
+    }
+
+    modifier onlyRegistered(){
+        IProfile.UserProfile memory userProfileTemp = profileContract.getProfile(msg.sender);
+        require(bytes(userProfileTemp.displayName).length > 0, "User Not Registered");
         _;
     }
 
@@ -34,7 +54,7 @@ contract Twitter{
         MAX_TWEET_LENGTH = newTweetLength;
     }
 
-    function createTweet(string memory _tweet) public{
+    function createTweet(string memory _tweet) public onlyRegistered{
 
         //adding require to limit the tweets
         require(bytes(_tweet).length <= 280, "Tweet is too long");
@@ -64,7 +84,7 @@ contract Twitter{
         return tweets[_owner];
     }
 
-    function likeTweet(address author, uint256 id) external{
+    function likeTweet(address author, uint256 id) external onlyRegistered{
         require(tweets[author][id].id == id , "tweet does not exist");
 
         tweets[author][id].likes++;
@@ -72,7 +92,7 @@ contract Twitter{
         emit TweetLiked(tweets[author][id], id, tweets[author][id].likes);
     }
 
-    function unlikeTweet(address author, uint256 id) external{
+    function unlikeTweet(address author, uint256 id) external onlyRegistered{
         require(tweets[author][id].id == id , "tweet does not exist");
         require(tweets[author][id].likes > 0 , "tweet has no likes");
 
