@@ -1,21 +1,46 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-contract Profile{
-
-    struct UserProfile{
+contract Profile {
+    struct UserProfile {
         string displayName;
         string bio;
+        string avatarURI; 
+        bool exists;
     }
 
-    mapping (address => UserProfile) public profiles;
+    mapping(address => UserProfile) private profiles;
 
-    function setProfile(string memory _displayName, string memory _bio) public {
-        profiles[msg.sender] = UserProfile( _displayName, _bio);
+    event ProfileCreated(address indexed user, string displayName, string bio, string avatarURI);
+    event ProfileUpdated(address indexed user, string displayName, string bio, string avatarURI);
+
+    modifier profileExists(address user) {
+        require(profiles[user].exists, "Profile does not exist");
+        _;
     }
 
-    function getProfile(address _user) public view returns (UserProfile memory){
+    function createProfile(
+        string memory _displayName,
+        string memory _bio,
+        string memory _avatarURI
+    ) external {
+        require(!profiles[msg.sender].exists, "Profile already exists");
+        profiles[msg.sender] = UserProfile(_displayName, _bio, _avatarURI, true);
+        emit ProfileCreated(msg.sender, _displayName, _bio, _avatarURI);
+    }
+
+    function updateProfile(
+        string memory _displayName,
+        string memory _bio,
+        string memory _avatarURI
+    ) external profileExists(msg.sender) {
+        profiles[msg.sender].displayName = _displayName;
+        profiles[msg.sender].bio = _bio;
+        profiles[msg.sender].avatarURI = _avatarURI;
+        emit ProfileUpdated(msg.sender, _displayName, _bio, _avatarURI);
+    }
+
+    function getProfile(address _user) external view profileExists(_user) returns (UserProfile memory) {
         return profiles[_user];
     }
-
 }
