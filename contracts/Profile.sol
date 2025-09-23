@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 contract Profile {
     struct UserProfile {
+        address account;      // 👈 store the account address
         string displayName;
         string bio;
         string avatarURI; 
@@ -25,7 +26,13 @@ contract Profile {
         string memory _avatarURI
     ) external {
         require(!profiles[msg.sender].exists, "Profile already exists");
-        profiles[msg.sender] = UserProfile(_displayName, _bio, _avatarURI, true);
+        profiles[msg.sender] = UserProfile(
+            msg.sender,       // 👈 store account here
+            _displayName,
+            _bio,
+            _avatarURI,
+            true
+        );
         emit ProfileCreated(msg.sender, _displayName, _bio, _avatarURI);
     }
 
@@ -37,6 +44,7 @@ contract Profile {
         profiles[msg.sender].displayName = _displayName;
         profiles[msg.sender].bio = _bio;
         profiles[msg.sender].avatarURI = _avatarURI;
+
         emit ProfileUpdated(msg.sender, _displayName, _bio, _avatarURI);
     }
 

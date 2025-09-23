@@ -15,6 +15,12 @@ contract Posts {
         bool exists;
     }
 
+    // Extended return struct with profile
+    struct PostWithProfile {
+        Post post;
+        Profile.UserProfile profile;
+    }
+
     Profile private profileContract;
     uint256 private nextPostId;
     mapping(uint256 => Post) private posts;
@@ -42,7 +48,11 @@ contract Posts {
     }
 
     // Create a new post
-    function createPost(string memory _content, string memory _imageURI, string memory _caption) external {
+    function createPost(
+        string memory _content,
+        string memory _imageURI,
+        string memory _caption
+    ) external {
         // ensure user has a profile
         Profile.UserProfile memory userProfile = profileContract.getProfile(msg.sender);
         require(userProfile.exists, "Create a profile first");
@@ -63,7 +73,12 @@ contract Posts {
     }
 
     // Update post content
-    function updatePost(uint256 _postId, string memory _newContent, string memory _newImageURI, string memory _newCaption)
+    function updatePost(
+        uint256 _postId,
+        string memory _newContent,
+        string memory _newImageURI,
+        string memory _newCaption
+    )
         external
         postExists(_postId)
         onlyAuthor(_postId)
@@ -97,11 +112,54 @@ contract Posts {
         emit PostUnliked(_postId, msg.sender);
     }
 
-    // Getters
-    function getPost(uint256 _postId) external view postExists(_postId) returns (Post memory) {
-        return posts[_postId];
+    // Get single post with profile
+    function getPost(uint256 _postId) external view postExists(_postId) returns (PostWithProfile memory) {
+        Post memory post = posts[_postId];
+        Profile.UserProfile memory userProfile = profileContract.getProfile(post.author);
+        return PostWithProfile(post, userProfile);
     }
 
+    // Get all posts with profile
+    function getAllPosts() external view returns (PostWithProfile[] memory) {
+        uint256 total = nextPostId - 1;
+        PostWithProfile[] memory result = new PostWithProfile[](total);
+
+        uint256 counter = 0;
+        for (uint256 i = 1; i <= total; i++) {
+            if (posts[i].exists) {
+                Post memory post = posts[i];
+                Profile.UserProfile memory userProfile = profileContract.getProfile(post.author);
+                result[counter] = PostWithProfile(post, userProfile);
+                counter++;
+            }
+        }
+
+        // Resize the array to actual size (skip deleted posts)
+        assembly { mstore(result, counter) }
+        return result;
+    }
+
+    // ✅ Get all posts from a specific user
+    function getUserPosts(address _user) external view returns (PostWithProfile[] memory) {
+        uint256 total = nextPostId - 1;
+        PostWithProfile[] memory temp = new PostWithProfile[](total);
+
+        uint256 counter = 0;
+        for (uint256 i = 1; i <= total; i++) {
+            if (posts[i].exists && posts[i].author == _user) {
+                Post memory post = posts[i];
+                Profile.UserProfile memory userProfile = profileContract.getProfile(post.author);
+                temp[counter] = PostWithProfile(post, userProfile);
+                counter++;
+            }
+        }
+
+        // Resize array to match actual count
+        assembly { mstore(temp, counter) }
+        return temp;
+    }
+
+    // Check if a user has liked a post
     function hasLiked(uint256 _postId, address _user) external view returns (bool) {
         return likedBy[_postId][_user];
     }
